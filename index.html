@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Interactive Study Planner</title>
+<style>
+:root{
+  --bg:#f4f6fb;--card:#ffffff;--text:#1f2937;--accent:#6366f1;--done:#22c55e
+}
+body.dark{
+  --bg:#0f172a;--card:#1e293b;--text:#e5e7eb;--accent:#818cf8;--done:#4ade80
+}
+*{box-sizing:border-box;font-family:system-ui}
+body{margin:0;background:var(--bg);color:var(--text);transition:.3s}
+header{display:flex;justify-content:space-between;align-items:center;padding:18px 30px;background:var(--card);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+button{cursor:pointer;border:none;padding:10px 16px;border-radius:10px;background:var(--accent);color:white;font-weight:600}
+.container{max-width:900px;margin:30px auto;padding:10px}
+.card{background:var(--card);padding:20px;border-radius:18px;box-shadow:0 6px 18px rgba(0,0,0,.08);margin-bottom:20px}
+input{padding:10px;border-radius:10px;border:1px solid #ccc;margin-right:10px}
+.task{display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:12px;margin-top:10px;background:rgba(0,0,0,.03)}
+.task.done{background:rgba(34,197,94,.15);text-decoration:line-through}
+.progress{height:18px;background:#ddd;border-radius:20px;margin-top:15px;overflow:hidden}
+.bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--done));transition:.4s}
+.quote{font-style:italic;opacity:.8;margin-top:10px}
+.fade{animation:fade .4s}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+#confetti{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+pointer-events:none;
+}
+
+</style>
+</head>
+<body>
+<header>
+<h2>📚 Study Planner</h2>
+<button id="themeBtn">Toggle Theme</button>
+</header>
+
+<div class="container">
+<div class="card">
+<h3>Add Task</h3>
+<select id="subject">
+  <option>Math</option>
+  <option>Physics</option>
+  <option>Chemistry</option>
+  <option>Programming</option>
+  <option>Other</option>
+</select>
+
+<input id="taskInput" placeholder="Enter study topic..." />
+<button onclick="addTask()">Add</button>
+
+<div class="progress"><div class="bar" id="progressBar"></div></div>
+<div class="quote" id="quote"></div>
+<h3 id="streak">🔥 Streak: 0 days</h3>
+
+</div>
+
+<div id="taskList"></div>
+</div>
+
+<script>
+const taskInput=document.getElementById("taskInput");
+const taskList=document.getElementById("taskList");
+const progressBar=document.getElementById("progressBar");
+const themeBtn=document.getElementById("themeBtn");
+const quoteBox=document.getElementById("quote");
+
+const quotes=[
+"Small steps daily lead to big success.",
+"Consistency beats motivation.",
+"Focus on progress, not perfection.",
+"One task at a time wins the race.",
+"Discipline is choosing between what you want now and what you want most."
+];
+quoteBox.textContent=quotes[Math.floor(Math.random()*quotes.length)];
+
+let tasks=JSON.parse(localStorage.getItem("tasks"))||[];
+
+function save(){
+localStorage.setItem("tasks",JSON.stringify(tasks));
+render();
+updateStreak();
+}
+
+
+function addTask(){
+if(!taskInput.value.trim())return;
+const subject=document.getElementById("subject").value;
+const today=new Date().toDateString();
+tasks.push({text:taskInput.value,subject:subject,done:false,date:today});
+
+
+taskInput.value="";
+save();
+}
+
+function toggleTask(i){tasks[i].done=!tasks[i].done;save()}
+function deleteTask(i){tasks.splice(i,1);save()}
+
+function render(){
+taskList.innerHTML="";
+let done=0;
+
+tasks.forEach((t,i)=>{
+const div=document.createElement("div");
+div.className="card task fade"+(t.done?" done":"");
+
+div.innerHTML=`
+<span><b>[${t.subject}]</b> ${t.text}</span>
+
+<div>
+<button onclick="toggleTask(${i})">✔</button>
+<button onclick="deleteTask(${i})" style="background:#ef4444">✖</button>
+</div>`;
+
+taskList.appendChild(div);
+if(t.done)done++;
+});
+
+const percent=tasks.length?Math.round(done/tasks.length*100):0;
+progressBar.style.width=percent+"%";
+if(percent===100 && tasks.length>0){
+launchConfetti();
+}
+
+}
+function updateStreak(){
+const streakBox=document.getElementById("streak");
+
+let streak=Number(localStorage.getItem("streak"))||0;
+let lastDate=localStorage.getItem("lastCompleted");
+
+const today=new Date().toDateString();
+const yesterday=new Date(Date.now()-86400000).toDateString();
+
+// did user complete a task today?
+const completedToday=tasks.some(t=>t.done && t.date===today);
+
+if(completedToday){
+if(lastDate===yesterday) streak++;
+else if(lastDate!==today) streak=1;
+
+localStorage.setItem("streak",streak);
+localStorage.setItem("lastCompleted",today);
+}
+
+streakBox.textContent="🔥 Streak: "+streak+" days";
+}
+function launchConfetti(){
+const canvas=document.getElementById("confetti");
+const ctx=canvas.getContext("2d");
+
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+let pieces=[];
+
+for(let i=0;i<150;i++){
+pieces.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height-canvas.height,
+r:Math.random()*6+4,
+d:Math.random()*150,
+color:`hsl(${Math.random()*360},80%,60%)`,
+tilt:Math.random()*10-10
+});
+}
+
+let angle=0;
+
+function draw(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+angle+=0.01;
+
+pieces.forEach(p=>{
+p.y+=Math.cos(angle+p.d)+2+p.r/2;
+p.x+=Math.sin(angle);
+
+ctx.beginPath();
+ctx.fillStyle=p.color;
+ctx.fillRect(p.x,p.y,p.r,p.r);
+});
+requestAnimationFrame(draw);
+}
+
+draw();
+
+setTimeout(()=>ctx.clearRect(0,0,canvas.width,canvas.height),3000);
+}
+
+render();
+
+themeBtn.onclick=()=>{
+document.body.classList.toggle("dark");
+localStorage.setItem("theme",document.body.classList.contains("dark"));
+}
+if(localStorage.getItem("theme")==="true")document.body.classList.add("dark");
+updateStreak();
+</script>
+<canvas id="confetti"></canvas>
+
+</body>
+</html>
