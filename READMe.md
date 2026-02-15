@@ -27,6 +27,8 @@ Download the project and open `index.html` in any browser.
 ##  Screenshots
 ![Study Planner Screenshot](screenshot.png)
 
+##  Demo
+![Study Planner Demo](Demo.mp4)
 
 ---
 
