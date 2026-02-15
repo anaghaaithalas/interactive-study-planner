@@ -25,8 +25,8 @@ A visually interactive productivity web app that helps students manage daily stu
 Download the project and open `index.html` in any browser.
 
 ##  Screenshots
+![Study Planner Screenshot](screenshot.png)
 
-(Add screenshots here after uploading to GitHub)
 
 ---
 
